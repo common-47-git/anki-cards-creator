@@ -13,13 +13,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_anki_note(word: str, definition: str, examples: list[str]) -> genanki.Note:
+def create_anki_note(word: str, definition: str, examples: list[str], transcription: str | None = None) -> genanki.Note:
     """
     Create a genanki.Note from a word, definition, and examples.
     Converts the examples list into HTML line breaks for Anki.
     """
     examples_text = "<br>".join(examples) if examples else ""
-    return genanki.Note(model=word_card_model, fields=[word, definition, examples_text])
+    return genanki.Note(model=word_card_model, fields=[word, transcription, definition, examples_text])
 
 
 def create_anki_deck(

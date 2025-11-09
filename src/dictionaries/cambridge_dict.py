@@ -2,7 +2,6 @@ import requests
 from bs4 import BeautifulSoup as BS
 from src.models.dict_entry import DictEntry
 
-
 CAMBRIDGE_URL = "https://dictionary.cambridge.org/dictionary/english/{word}"
 
 
@@ -32,6 +31,7 @@ def _fetch_html(word_spelling: str) -> str | None:
 def _parse_definitions(soup: BS) -> list:
     """
     Extract definition blocks from the parsed HTML.
+    Each block represents one meaning of the word.
     """
     return soup.find_all("div", class_="ddef_h")
 
@@ -54,11 +54,10 @@ def _extract_definition_text(definition_block) -> str | None:
 
 def _extract_examples(definition_block) -> list[str]:
     """
-    Extract examples sentences following a definition block.
+    Extract example sentences following a definition block.
     """
     examples = []
     def_body = definition_block.find_next_sibling("div", class_="def-body ddef_b")
-
     if not def_body:
         return examples
 
@@ -70,10 +69,24 @@ def _extract_examples(definition_block) -> list[str]:
     return examples
 
 
-def _build_dict_entries(word_spelling: str, definition_blocks: list) -> list[DictEntry]:
+def _get_first_us_transcription(soup: BS) -> str | None:
+    """
+    Get the first US IPA transcription on the page.
+    Returns None if not found.
+    """
+    us_block = soup.find("span", class_="us dpron-i")
+    if not us_block:
+        return None
+
+    ipa_span = us_block.find("span", class_="ipa")
+    return ipa_span.get_text(strip=True) if ipa_span else None
+
+
+def _build_dict_entries(word_spelling: str, definition_blocks: list, transcription: str | None) -> list[DictEntry]:
     """
     Build DictEntry objects from definition blocks.
     Avoid duplicate definitions.
+    Use the same transcription for all definitions (first US IPA found).
     """
     entries: list[DictEntry] = []
     seen_definitions = set()
@@ -84,10 +97,15 @@ def _build_dict_entries(word_spelling: str, definition_blocks: list) -> list[Dic
             continue
 
         seen_definitions.add(definition_text)
+
         examples = _extract_examples(block)
+
         entries.append(
             DictEntry(
-                spelling=word_spelling, definition=definition_text, examples=examples
+                spelling=word_spelling,
+                transcription=transcription,  # US IPA
+                definition=definition_text,
+                examples=examples,
             )
         )
 
@@ -96,17 +114,20 @@ def _build_dict_entries(word_spelling: str, definition_blocks: list) -> list[Dic
 
 def get_word_entry(word_spelling: str) -> list[DictEntry]:
     """
-    Fetch word entries (definitions + examples) from Cambridge Dictionary.
+    Fetch word entries (definitions + example sentences + first US transcription)
+    from Cambridge Dictionary.
     """
     html = _fetch_html(word_spelling)
     if not html:
         return []
 
     soup = BS(html, "lxml")
-    definition_blocks = _parse_definitions(soup)
 
+    definition_blocks = _parse_definitions(soup)
     if not definition_blocks:
         print(f"Word '{word_spelling}' not found, make sure you wrote it right.")
         return []
 
-    return _build_dict_entries(word_spelling, definition_blocks)
+    transcription = _get_first_us_transcription(soup)
+
+    return _build_dict_entries(word_spelling, definition_blocks, transcription)

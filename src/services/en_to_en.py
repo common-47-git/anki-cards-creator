@@ -78,7 +78,7 @@ def process_words(words: list[str]) -> list:
 
         for entry in selected_entries:
             entry = select_examples(entry)
-            note = create_anki_note(entry.spelling, entry.definition, entry.examples)
+            note = create_anki_note(entry.spelling, entry.definition, entry.examples, entry.transcription)
             all_notes.append(note)
         
         clear_terminal()
