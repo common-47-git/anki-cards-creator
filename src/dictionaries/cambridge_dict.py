@@ -103,7 +103,7 @@ def _build_dict_entries(word_spelling: str, definition_blocks: list, transcripti
         entries.append(
             DictEntry(
                 spelling=word_spelling,
-                transcription=transcription,  # US IPA
+                transcription=transcription or "", 
                 definition=definition_text,
                 examples=examples,
             )
