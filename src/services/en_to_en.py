@@ -136,3 +136,4 @@ def run(words: list[str], path: str | None = None, deck: str | None = None):
     deck_obj = base.create_anki_deck(deck, notes)
     base.save_deck(path, deck_obj)
     print(f"[INFO] Deck saved successfully to {path}")
+

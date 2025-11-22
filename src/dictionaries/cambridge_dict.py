@@ -1,4 +1,5 @@
 import requests
+import pronouncing
 from bs4 import BeautifulSoup as BS
 from src.models.dict_entry import DictEntry
 
@@ -112,12 +113,12 @@ def _build_dict_entries(word_spelling: str, definition_blocks: list, transcripti
     return entries
 
 
-def get_word_entry(word_spelling: str) -> list[DictEntry]:
+def get_word_entry(entry_spelling: str) -> list[DictEntry]:
     """
     Fetch word entries (definitions + example sentences + first US transcription)
     from Cambridge Dictionary.
     """
-    html = _fetch_html(word_spelling)
+    html = _fetch_html(entry_spelling)
     if not html:
         return []
 
@@ -125,9 +126,50 @@ def get_word_entry(word_spelling: str) -> list[DictEntry]:
 
     definition_blocks = _parse_definitions(soup)
     if not definition_blocks:
-        print(f"Word '{word_spelling}' not found, make sure you wrote it right.")
+        print(f"Entry '{entry_spelling}' not found, make sure you wrote it right.")
         return []
 
-    transcription = _get_first_us_transcription(soup)
+    try:
+        transcription = get_first_pronouncing(entry_spelling)
+    except IndexError:
+        transcription = _get_first_us_transcription(soup)
 
-    return _build_dict_entries(word_spelling, definition_blocks, transcription)
+    return _build_dict_entries(entry_spelling, definition_blocks, transcription)
+
+
+
+
+ARPA_TO_IPA = {
+    "AA": "ɑ", "AE": "æ", "AH": "ʌ", "AO": "ɔ",
+    "AW": "aʊ", "AY": "aɪ", "B": "b", "CH": "tʃ",
+    "D": "d", "DH": "ð", "EH": "ɛ", "ER": "ɝ",
+    "EY": "eɪ", "F": "f", "G": "ɡ", "HH": "h",
+    "IH": "ɪ", "IY": "i", "JH": "dʒ", "K": "k",
+    "L": "l", "M": "m", "N": "n", "NG": "ŋ",
+    "OW": "oʊ", "OY": "ɔɪ", "P": "p", "R": "ɹ",
+    "S": "s", "SH": "ʃ", "T": "t", "TH": "θ",
+    "UH": "ʊ", "UW": "u", "V": "v", "W": "w",
+    "Y": "j", "Z": "z", "ZH": "ʒ"
+}
+
+def _convert_arpa_to_ipa(arpa):
+    result = []
+    for symbol in arpa.split():
+        symbol = ''.join([c for c in symbol if not c.isdigit()])  # remove stress digits
+        if symbol in ARPA_TO_IPA:
+            result.append(ARPA_TO_IPA[symbol])
+    return "".join(result)
+
+
+def get_first_pronouncing(entry: str):
+    ipa_words = []
+
+    for word in entry.split():
+        phones_list = pronouncing.phones_for_word(word.lower())
+
+        first_arpa = phones_list[0]
+        ipa = _convert_arpa_to_ipa(first_arpa)
+
+        ipa_words.append(ipa)
+
+    return " ".join(ipa_words)
