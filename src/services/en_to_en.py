@@ -31,8 +31,9 @@ def select_definitions(entries: list[DictEntry]) -> list[DictEntry]:
 
     print()
     selected_defs = checkbox(
-        f"SELECT DEFINITIONS FOR '{entries[0].spelling.upper()}'\n\n",
+        f"SELECT DEFINITIONS FOR '{entries[0].spelling.upper()}'",
         choices=[e.definition for e in entries],
+        instruction=""
     ).ask()
 
     if not selected_defs:
@@ -50,8 +51,9 @@ def select_examples(entry: DictEntry) -> DictEntry:
     print()
     if entry.examples:
         selected_examples = checkbox(
-            f"'{entry.spelling.upper()}' — {entry.definition.upper()}\n\n",
+            f"'{entry.spelling.upper()}' — {entry.definition.upper()}",
             choices=entry.examples,
+            instruction=""
         ).ask()
         entry.examples = selected_examples or []
     else:
