@@ -1,5 +1,13 @@
+import warnings
+warnings.filterwarnings(
+    "ignore",
+    message="pkg_resources is deprecated",
+    category=UserWarning,
+)
+
 import argparse
 from src.services import en_to_en
+
 
 
 def main():
